@@ -4,8 +4,8 @@
 // @version      0.1
 // @description  you can export your conversation
 // @author       flolep2607
-// @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
-// @downloadURL  https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
+// @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/main/betterchat.user.js
+// @downloadURL  https://github.com/flolep2607/better-chat-open-ai/raw/main/betterchat.user.js
 // @match        https://chat.openai.com/chat
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=chat.openai.com
 // @grant        none
