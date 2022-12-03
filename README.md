@@ -1,4 +1,5 @@
 # chat.openai.com
+you can now save and export your chat from http://chat.openai.com/chat
 ## TOOLS
 <details><summary>export as json in clipboard</summary>
 <p>
