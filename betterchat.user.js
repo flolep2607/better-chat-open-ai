@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
@@ -16,7 +16,11 @@ const idontunderstand_flags=[
     /Can you please provide (some )?more (context|information)/,
     /I'm still not understanding your question/,
     /Is there something specific you need help with or a question/,
-    /I'm sorry, but I'm not able to/
+    /, but I'm not able to/,
+    /I don't have the ability to/,
+    /I am not programmed to discuss/,
+    /designed to provide information and answer questions to the best of my ability/,
+    /je n'ai pas la capacité de/
 ]
 function fallbackCopyTextToClipboard(text) {
     var textArea = document.createElement("textarea");
@@ -55,9 +59,14 @@ function copyTextToClipboard(text) {
 function getElementByXpath(path) {
   return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
-const dont_understand=()=>{
+const change_color=(color='red')=>{
     const aa=document.querySelectorAll('body>div#__next>div.itwlde>div.flex>main>div>div>div>div>div p');
-    aa[aa.length-1].style.color='red';
+    aa[aa.length-1].style.color=color;
+}
+function getColor(value){
+    //value from 0 to 1
+    var hue=((1-value)*120).toString(10);
+    return ["hsl(",hue,",100%,50%)"].join("");
 }
 async function* makeTextFileLineIterator(reader) {
     let {value: chunk, done: readerDone} = await reader.read();
@@ -104,8 +113,16 @@ const check_understand=async(resp)=>{
         if(line.startsWith('data')){
             let json=JSON.parse(line.substring(5));
             //console.log('Line json:',json);
-            if(json.message.content.parts.length && idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
-                dont_understand();
+            if(!json.message.content.parts.length){
+            }else if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
+                change_color();
+            }else{
+                const resultat=window.sentiment.polarity_scores(json.message.content.parts[0]);
+                if(resultat.neu<resultat.neg || resultat.neu<resultat.pos){
+                    console.log(resultat);
+                    const precent=resultat.neu+resultat.neg;
+                    change_color(getColor(precent));
+                }
             }
         }
     }
@@ -131,8 +148,6 @@ window.fetch = async (...args) => {
         check_understand(body);
         console.log(response)
     }
-    /* work with the cloned response in a separate promise
-     chain -- could use the same chain with `await`. */
     return response;
 };
 
@@ -175,4 +190,12 @@ window.fetch = async (...args) => {
     document.body.insertAdjacentHTML('beforeend',`<style>${CSS}</style>`);
     document.querySelector(".chat").addEventListener("click", generate_json);
     document.querySelector(".download").addEventListener("click", capture);
+    var script = document.createElement('script');
+    script.onload = function () {
+        console.log('LOADED');
+        window.sentiment = new SentimentIntensityAnalyzer();
+    };
+    script.src = 'https://cdn.jsdelivr.net/gh/greymattersblog/VADERSentiment@main/vader.js'
+    document.head.appendChild(script);
+
 })();
