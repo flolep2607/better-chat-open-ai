@@ -1,15 +1,23 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  you can export your conversation
 // @author       flolep2607
-// @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/main/betterchat.user.js
-// @downloadURL  https://github.com/flolep2607/better-chat-open-ai/raw/main/betterchat.user.js
+// @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
+// @downloadURL  https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
 // @match        https://chat.openai.com/chat
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=chat.openai.com
 // @grant        none
 // ==/UserScript==
+
+const _decoder=new TextDecoder();
+const idontunderstand_flags=[
+    /Can you please provide (some )?more (context|information)/,
+    /I'm still not understanding your question/,
+    /Is there something specific you need help with or a question/,
+    /I'm sorry, but I'm not able to/
+]
 function fallbackCopyTextToClipboard(text) {
     var textArea = document.createElement("textarea");
     textArea.value = text;
@@ -47,6 +55,87 @@ function copyTextToClipboard(text) {
 function getElementByXpath(path) {
   return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
+const dont_understand=()=>{
+    const aa=document.querySelectorAll('body>div#__next>div.itwlde>div.flex>main>div>div>div>div>div p');
+    aa[aa.length-1].style.color='red';
+}
+async function* makeTextFileLineIterator(reader) {
+    let {value: chunk, done: readerDone} = await reader.read();
+    chunk = chunk ? _decoder.decode(chunk, {stream: true}) : "";
+    let re = /\r\n|\n|\r/gm;
+    let startIndex = 0;
+    let tmp;
+    for (;;) {
+        let result = re.exec(chunk);
+        if (!result) {
+            if (readerDone) {
+                break;
+            }
+            let remainder = chunk.substr(startIndex);
+            ({value: chunk, done: readerDone} = await reader.read());
+            chunk = remainder + (chunk ? _decoder.decode(chunk, {stream: true}) : "");
+            startIndex = re.lastIndex = 0;
+            continue;
+        }
+        tmp=chunk.substring(startIndex, result.index);
+        if(tmp){
+            yield tmp;
+        }
+        startIndex = re.lastIndex;
+    }
+    if (startIndex < chunk.length) {
+        // last line didn't end in a newline char
+        tmp=chunk.substr(startIndex);
+        if(tmp){
+            yield tmp;
+        }
+    }
+}
+const check_understand=async(resp)=>{
+    console.log("check_understand");
+    const reader =resp.body.getReader();
+    let charsReceived = 0;
+    let result=[];
+    // read() returns a promise that resolves
+    // when a value has been received
+    let line;
+    for await (let line of makeTextFileLineIterator(reader)) {
+        //console.log('Line:',line);
+        if(line.startsWith('data')){
+            let json=JSON.parse(line.substring(5));
+            //console.log('Line json:',json);
+            if(json.message.content.parts.length && idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
+                dont_understand();
+            }
+        }
+    }
+    /*while(1){
+        line=await next_line(reader);
+        console.log('Line:',line);
+    }*/
+    console.log('end');
+}
+
+// catch all fetch queries
+const {fetch: origFetch} = window;
+window.fetch = async (...args) => {
+    if(args[0].includes('/moderations')){
+       return ;
+    }
+    const response = await origFetch(...args);
+    if(args[0].includes('/conversation')){
+        console.log("fetch called with args:", args);
+        console.log('cloning');
+        const body=response.clone()
+        console.log("intercepted response:", body)
+        check_understand(body);
+        console.log(response)
+    }
+    /* work with the cloned response in a separate promise
+     chain -- could use the same chain with `await`. */
+    return response;
+};
+
 (function() {
     'use strict';
     var _loaded = {};
