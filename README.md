@@ -1,6 +1,6 @@
 # chat.openai.com
-you can now save and export your chat from http://chat.openai.com/chat
-you can now see when the AI can't do something
+you can now save and export your chat from http://chat.openai.com/chat <br>
+you can now see when the AI can't do something <br>
 you can now see the sentiment of all messages from the AI
 ## TOOLS
 <details><summary>export as json in clipboard</summary>
