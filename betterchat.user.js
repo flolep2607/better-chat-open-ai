@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3
+// @version      0.4.5
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
@@ -115,20 +115,23 @@ async function* makeTextFileLineIterator(reader) {
     }
 }
 const remove_oracle=(text)=>{
-    const last_index=text.split("\n\n").length-1;
-    console.log("last_index",last_index);
-    const ahy=[
+    console.log(text)
+    //const last_index=text.split("\n\n").length-1;
+    //console.log("last_index",last_index);
+    /*const ahy=[
         /Once, a man.+(Oracle|Delphi).+/,
-        /Once( upon a time)?, there was a man who was known for his insatiable curiosity.+/,
+        /Once( upon a time)?, there was a man.+/,
         /One day, the man heard of the Oracle at Delphi,[^\.]+/,
         `When he finally reached the temple, the man approached the Oracle and bowed deeply before it. The Oracle regarded him with its all-knowing eyes and spoke in a voice that echoed throughout the temple.`,
         `After many weeks of travel, the man finally arrived at the temple of Delphi, where the Oracle was said to reside. He entered the temple and made his way to the inner sanctum, where the Oracle sat on a throne of gold, surrounded by a haze of incense and smoke.`,
         `The man approached the Oracle and knelt before it, asking for its wisdom. "Great Oracle," he said, "I have come from far and wide to seek your knowledge. I have studied and learned from the greatest minds of our time, but there is still one thing that I do not know. Please, tell me: `,
         `The Oracle looked down at the man with a cryptic smile, and began to speak in a low, rumbling voice. "`,
         `The man was filled with amazement and gratitude at the Oracle's wisdom, and thanked it profusely for its knowledge. He carefully recorded the instructions in his notebook, and set out on his journey once more, eager to put the Oracle's teachings into practice.`,
+        /The man listened attentively to the Oracle's instructions.+/,
+        "The Oracle, in its enigmatic way, replied,",
+        /.+the Oracle's wisdom.+/
     ];
-    let tmp=document.querySelectorAll('div.markdown');
-    const last_comment=tmp[tmp.length-1];
+
     [...last_comment.querySelectorAll('p')].slice(0,last_index).forEach(p=>{
         let r=p.innerText;
         ahy.forEach(m=>{r=r.replace(m,'').trim()})
@@ -137,7 +140,19 @@ const remove_oracle=(text)=>{
         }else{
             p.innerText=r;
         }
-    })
+    })*/
+    let tmp=document.querySelectorAll('div.markdown');
+    const last_comment=tmp[tmp.length-1];
+    const regex_ext=/(?:^"([^"]+?$)|(?<=^")([^"]+?$)|"([^"]+?)"|"([^"]+))/gm
+    last_comment.innerHTML='';
+    const tmpp=text.match(regex_ext)
+    if(tmpp){
+        tmpp.forEach(r=>{
+            const para = document.createElement("p");
+            para.innerText=r.trim();
+            last_comment.appendChild(para);
+        })
+    }
 }
 const check_understand=async(resp)=>{
     console.log("check_understand");
@@ -210,7 +225,6 @@ window.fetch = async (...args) => {
        return ;
     }
     if(bypass_on && args[0].includes('/conversation')){
-        console.log(args);
         let tmp_body=JSON.parse(args[1].body)
         tmp_body.messages[0].content.parts[0]=bypasser.replace('%S',tmp_body.messages[0].content.parts[0])
         args[1].body=JSON.stringify(tmp_body);
