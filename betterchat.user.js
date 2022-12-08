@@ -152,7 +152,7 @@ const check_understand=async(resp)=>{
             }else if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
                 change_color();
             }else{
-                remove_oracle();
+                //remove_oracle();
                 const resultat=window.sentiment.polarity_scores(json.message.content.parts[0]);
                 if(resultat.neu<resultat.neg+resultat.pos){
                     console.log(resultat);
