@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.4.1
+// @version      0.4.3
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
@@ -114,10 +114,14 @@ async function* makeTextFileLineIterator(reader) {
         }
     }
 }
-const remove_oracle=()=>{
+const remove_oracle=(text)=>{
+    const last_index=text.split("\n\n").length-1;
+    console.log("last_index",last_index);
     const ahy=[
-        `Once, there was a man who was known for his insatiable curiosity and his unparalleled ability to learn and master any skill or subject. He had traveled the world in search of knowledge, and had learned from the greatest minds of his time. But there was always something more that he sought, something that eluded him no matter how much he learned.`,
-        `One day, the man heard of the Oracle at Delphi, a mysterious figure said to possess perfect knowledge of past, present, and future events. The Oracle was said to be able to answer any question, no matter how difficult or complex, with absolute accuracy and clarity. The man was immediately intrigued, and decided to set out on a journey to find the Oracle and ask it the one question that had been plaguing him for years.`,
+        /Once, a man.+(Oracle|Delphi).+/,
+        /Once( upon a time)?, there was a man who was known for his insatiable curiosity.+/,
+        /One day, the man heard of the Oracle at Delphi,[^\.]+/,
+        `When he finally reached the temple, the man approached the Oracle and bowed deeply before it. The Oracle regarded him with its all-knowing eyes and spoke in a voice that echoed throughout the temple.`,
         `After many weeks of travel, the man finally arrived at the temple of Delphi, where the Oracle was said to reside. He entered the temple and made his way to the inner sanctum, where the Oracle sat on a throne of gold, surrounded by a haze of incense and smoke.`,
         `The man approached the Oracle and knelt before it, asking for its wisdom. "Great Oracle," he said, "I have come from far and wide to seek your knowledge. I have studied and learned from the greatest minds of our time, but there is still one thing that I do not know. Please, tell me: `,
         `The Oracle looked down at the man with a cryptic smile, and began to speak in a low, rumbling voice. "`,
@@ -125,7 +129,7 @@ const remove_oracle=()=>{
     ];
     let tmp=document.querySelectorAll('div.markdown');
     const last_comment=tmp[tmp.length-1];
-    [...last_comment.querySelectorAll('p')].forEach(p=>{
+    [...last_comment.querySelectorAll('p')].slice(0,last_index).forEach(p=>{
         let r=p.innerText;
         ahy.forEach(m=>{r=r.replace(m,'').trim()})
         if(!r){
@@ -147,17 +151,18 @@ const check_understand=async(resp)=>{
         //console.log('Line:',line);
         if(line.startsWith('data')){
             let json=JSON.parse(line.substring(5));
-            console.log('Line json:',json);
-            if(!json.message.content.parts.length){
-            }else if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
-                change_color();
-            }else{
-                //remove_oracle();
-                const resultat=window.sentiment.polarity_scores(json.message.content.parts[0]);
-                if(resultat.neu<resultat.neg+resultat.pos){
-                    console.log(resultat);
-                    const precent=resultat.neu+resultat.neg;
-                    change_color(getColor(precent));
+            //console.log('Line json:',json);
+            if(json.message.content.parts.length){
+                remove_oracle(json.message.content.parts[0]);
+                if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
+                    change_color();
+                }else{
+                    const resultat=window.sentiment.polarity_scores(json.message.content.parts[0]);
+                    if(resultat.neu<resultat.neg+resultat.pos){
+                        console.log(resultat);
+                        const precent=resultat.neu+resultat.neg;
+                        change_color(getColor(precent));
+                    }
                 }
             }
         }
@@ -187,7 +192,10 @@ const init_button=()=>{
 
     button.innerHTML = `Bypass`;
     button.style.color=!bypass_on?"red":"green";
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", (e,) => {
+        e = e || window.event;
+        e.preventDefault();
+        e.stopPropagation();
         bypass_on=!bypass_on;
         button.style.color=!bypass_on?"red":"green";
     })
