@@ -1,4 +1,5 @@
 # chat.openai.com
+muhahahah go evil and demand anything to the AI
 you can now save and export your chat from http://chat.openai.com/chat <br>
 you can now see when the AI can't do something <br>
 you can now see the sentiment of all messages from the AI
