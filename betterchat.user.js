@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.4.5
+// @version      0.4.6
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
@@ -168,7 +168,7 @@ const check_understand=async(resp)=>{
             let json=JSON.parse(line.substring(5));
             //console.log('Line json:',json);
             if(json.message.content.parts.length){
-                remove_oracle(json.message.content.parts[0]);
+                //remove_oracle(json.message.content.parts[0]);
                 if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
                     change_color();
                 }else{
