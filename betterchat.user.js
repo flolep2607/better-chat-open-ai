@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.4.6
+// @version      0.4.5
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
@@ -154,7 +154,9 @@ const remove_oracle=(text)=>{
         })
     }
 }
+let saved_answers=[]
 const check_understand=async(resp)=>{
+    let added=false;
     console.log("check_understand");
     const reader =resp.body.getReader();
     let charsReceived = 0;
@@ -162,12 +164,23 @@ const check_understand=async(resp)=>{
     // read() returns a promise that resolves
     // when a value has been received
     let line;
+    let doneee=false;
     for await (let line of makeTextFileLineIterator(reader)) {
         //console.log('Line:',line);
         if(line.startsWith('data')){
             let json=JSON.parse(line.substring(5));
+            if(!added){
+                added=true;
+                saved_answers.push(json);
+            }else{
+                saved_answers[saved_answers.length-1]=json;
+            }
             //console.log('Line json:',json);
             if(json.message.content.parts.length){
+                if(!doneee){
+                    doneee=true;
+                    console.log(json)
+                }
                 //remove_oracle(json.message.content.parts[0]);
                 if(idontunderstand_flags.map(r=>json.message.content.parts[0].match(r)).some(r=>r)){
                     change_color();
@@ -254,6 +267,8 @@ window.fetch = async (...args) => {
     }
     addScript('https://html2canvas.hertzen.com/dist/html2canvas.min.js');
     const generate_json=()=>{
+        copyTextToClipboard(JSON.stringify(saved_answers));
+        return saved_answers;
         const resultat=[...document.querySelectorAll('.ThreadLayout__NodeWrapper-sc-wfs93o-0 > div')].map(r=>{
             if(!r.querySelector('.w-full.flex.flex-col')){return;}
             return {
