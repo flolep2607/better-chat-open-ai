@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better chat.OPENAI
 // @namespace    http://tampermonkey.net/
-// @version      0.4.5
+// @version      0.4.6
 // @description  you can export your conversation
 // @author       flolep2607
 // @updateURL    https://github.com/flolep2607/better-chat-open-ai/raw/master/betterchat.user.js
